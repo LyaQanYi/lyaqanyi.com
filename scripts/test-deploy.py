@@ -98,6 +98,43 @@ class DeploymentTest(unittest.TestCase):
         self.assertEqual(before, self.env_file.read_bytes())
         self.assertFalse(any("up" in call["args"] for call in self.state()["calls"]))
 
+    def test_1panel_compose_is_used_for_update_and_rollback(self):
+        compose_file = self.directory / "docker-compose.yml"
+        (self.directory / "compose.yaml").rename(compose_file)
+        original_compose = compose_file.read_bytes()
+        for unhealthy in [False, True]:
+            with self.subTest(unhealthy=unhealthy):
+                self.configure(running=OLD, calls=[], unhealthy=[TARGET] if unhealthy else [])
+                result = self.run_deploy()
+                self.assertEqual(result.returncode, 1 if unhealthy else 0, result.stderr)
+                self.assertEqual(self.state()["running"], OLD if unhealthy else TARGET)
+                if unhealthy:
+                    self.assertIn("restored and is healthy", result.stderr)
+                for call in self.state()["calls"]:
+                    args = call["args"]
+                    if args[0] == "compose":
+                        self.assertEqual(args[args.index("--file") + 1], str(compose_file))
+                        self.assertEqual(args[args.index("--project-name") + 1], "lyaqanyi-web")
+                self.assertEqual(compose_file.read_bytes(), original_compose)
+                self.assertFalse((self.directory / "compose.yaml").exists())
+
+    def test_missing_or_ambiguous_compose_files_fail_before_docker(self):
+        compose_file = self.directory / "compose.yaml"
+        duplicate = self.directory / "docker-compose.yml"
+        shutil.copy(compose_file, duplicate)
+        before = self.env_file.read_bytes()
+        result = self.run_deploy()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Multiple Compose files", result.stderr)
+        self.assertEqual(self.state()["calls"], [])
+        compose_file.unlink()
+        duplicate.unlink()
+        result = self.run_deploy()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Install the website Compose file", result.stderr)
+        self.assertEqual(self.state()["calls"], [])
+        self.assertEqual(self.env_file.read_bytes(), before)
+
     def test_unhealthy_release_restores_actual_previous_image(self):
         self.configure(unhealthy=[TARGET])
         result = self.run_deploy()

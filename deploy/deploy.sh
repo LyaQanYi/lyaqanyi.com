@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install next to compose.yaml and .env on the Debian server.
+# Install next to the Compose file and .env on the Debian server.
 set -Eeuo pipefail
 umask 077
 
@@ -7,7 +7,15 @@ fail() { printf '%s\n' "$*" >&2; exit 1; }
 deploy_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 cd -- "$deploy_dir"
 [[ $# == 1 ]] || fail 'Usage: bash deploy.sh <ghcr.io/owner/image@sha256:digest> | --rollback'
-[[ -f .env && -f compose.yaml ]] || fail 'Create .env and install compose.yaml first.'
+[[ -f .env ]] || fail 'Create .env next to deploy.sh first.'
+compose_file=''
+for filename in compose.yaml compose.yml docker-compose.yaml docker-compose.yml; do
+  if [[ -f $filename ]]; then
+    [[ -z $compose_file ]] || fail 'Multiple Compose files found; keep only the file used by this website.'
+    compose_file="$deploy_dir/$filename"
+  fi
+done
+[[ -n $compose_file ]] || fail 'Install the website Compose file next to deploy.sh first.'
 command -v docker >/dev/null || fail 'Docker is required.'
 command -v flock >/dev/null || fail 'flock is required (Debian package: util-linux).'
 exec 9>.deploy.lock
@@ -28,7 +36,7 @@ compose_for() {
   local image=$1
   shift
   SITE_IMAGE="$image" docker compose --env-file "$deploy_dir/.env" \
-    --project-name lyaqanyi-web --file "$deploy_dir/compose.yaml" "$@"
+    --project-name lyaqanyi-web --file "$compose_file" "$@"
 }
 
 record_image() {

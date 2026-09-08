@@ -28,6 +28,16 @@ ghcr.io/lyaqanyi/lyaqanyi.com@sha256:这里是64位摘要
 
 ## 2. 准备服务器目录和部署账号
 
+### 已通过 1Panel「编辑」创建编排的站点
+
+本次站点已经由 1Panel 创建，实际目录为 `/opt/1panel/docker/compose/lyaqanyi-web/`，其中已有 `.env` 和 `docker-compose.yml`。在这个目录上传 `deploy/deploy.sh` 即可；无需另建编排或覆盖现有配置。
+
+脚本会识别同目录下的 `compose.yaml`、`compose.yml`、`docker-compose.yaml` 或 `docker-compose.yml`，所有更新和回滚都使用该文件及 `lyaqanyi-web` 项目名。若存在多个候选文件，脚本会停止，避免更新错误的编排。
+
+继续配置时，下文的 `/opt/lyaqanyi-site` 都应使用上述实际目录，`compose.yaml` 应使用 `docker-compose.yml`，GitHub 的 `DEPLOY_PATH` 也设置为实际目录。专用部署账号需要能读取编排文件，并写入该目录及 `.env`。这里的目录属于现有 1Panel 编排，不要再次执行第 4 节的创建操作。
+
+### 尚未创建编排的站点
+
 在 1Panel 服务器终端以 root 检查：
 
 ```bash
