@@ -6,7 +6,7 @@ import { Container } from "@/components/section";
 import { sortedPosts } from "@/content/posts";
 import { featuredProjects } from "@/content/projects";
 import { profile } from "@/content/site";
-import { cmdysj } from "@/lib/fonts";
+import { sourceHanSansCN } from "@/lib/fonts";
 import { FontComparison } from "./font-comparison";
 
 // Keep the previous title face available only in this comparison.
@@ -19,7 +19,7 @@ const originalDisplay = Instrument_Serif({
 
 export const metadata: Metadata = {
   title: "字体对比",
-  description: "对比原版字体与 cmdysj 的标题和正文效果。",
+  description: "对比原版字体与 Source Han Sans CN 的标题和正文效果。",
   robots: { index: false, follow: false },
 };
 
@@ -41,7 +41,7 @@ export default function FontPreviewPage() {
       </div>
 
       <FontComparison
-        fontFamily={cmdysj.style.fontFamily}
+        fontFamily={sourceHanSansCN.style.fontFamily}
         sample={{
           name: profile.name,
           handle: profile.handle,

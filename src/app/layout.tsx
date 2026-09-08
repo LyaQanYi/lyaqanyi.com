@@ -6,13 +6,13 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader, type HeaderCopy } from "@/components/site-header";
 import { uiCopy } from "@/content/copy";
 import { htmlLang, navItems, profile, siteName, siteUrl } from "@/content/site";
-import { cmdysj } from "@/lib/fonts";
+import { sourceHanSansCN } from "@/lib/fonts";
 import { themeBootScript } from "@/lib/theme";
 
 import "@/app/globals.css";
 
-/* cmdysj supplies display type. Body and navigation keep Geist with the
-   platform's Chinese sans-serif fallback. */
+/* Source Han Sans CN supplies display type. Body and navigation keep Geist
+   with the platform's Chinese sans-serif fallback. */
 const geist = Geist({
   subsets: ["latin"],
   variable: "--font-geist",
@@ -28,7 +28,7 @@ const geistMono = Geist_Mono({
 const fontVariables = [
   geist.variable,
   geistMono.variable,
-  cmdysj.variable,
+  sourceHanSansCN.variable,
 ].join(" ");
 
 export function generateMetadata(): Metadata {

@@ -62,14 +62,14 @@ export function FontComparison({ fontFamily, sample }: { fontFamily: string; sam
       </div>
 
       <p role="status" className="mt-4 min-h-5 text-xs text-fg-subtle">
-        {fontStatus === "ready" ? "cmdysj 已加载，可切换查看效果。" : fontStatus === "error" ? "字体未能加载，当前显示后备字体。刷新页面可重试。" : "正在加载 cmdysj，请稍候…"}
+        {fontStatus === "ready" ? "Source Han Sans CN 已加载，可切换查看效果。" : fontStatus === "error" ? "字体未能加载，当前显示后备字体。刷新页面可重试。" : "正在加载 Source Han Sans CN，请稍候…"}
       </p>
 
       <div className={`mt-5 grid items-start gap-6 ${view === "compare" ? "lg:grid-cols-2" : "mx-auto max-w-3xl"}`}>
         {(["original", "uploaded"] as const).map((font) => (
-          <section key={font} aria-label={font === "original" ? "原版字体示例" : "cmdysj 字体示例"} className={`min-w-0 border border-line ${view !== "compare" && view !== font ? "hidden" : ""}`}>
+          <section key={font} aria-label={font === "original" ? "原版字体示例" : "Source Han Sans CN 字体示例"} className={`min-w-0 border border-line ${view !== "compare" && view !== font ? "hidden" : ""}`}>
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-bg-alt px-5 py-3 text-xs">
-              <span>{font === "original" ? "A · 原版字体" : "B · cmdysj"}</span>
+              <span>{font === "original" ? "A · 原版字体" : "B · Source Han Sans CN"}</span>
               <span className="text-fg-subtle">{font === "original" ? "原版排版" : scope === "headings" ? "仅替换标题（已采用）" : "标题与正文"}</span>
             </div>
             <div className={styles.sample} data-font={font} data-scope={scope}>

@@ -5,7 +5,7 @@
 }
 
 .sample[data-font="uploaded"] {
-  --f-display: var(--font-cmdysj), var(--font-cjk-serif);
+  --f-display: var(--font-source-han-sans-cn), var(--font-cjk-serif);
 }
 
 .sample[data-font="original"] {
@@ -13,7 +13,7 @@
 }
 
 .sample[data-font="uploaded"][data-scope="all"] {
-  --f-sans: var(--font-cmdysj), var(--font-cjk-sans);
+  --f-sans: var(--font-source-han-sans-cn), var(--font-cjk-sans);
 }
 
 .name {

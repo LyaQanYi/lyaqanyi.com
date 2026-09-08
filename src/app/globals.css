@@ -42,7 +42,7 @@
   --border-w: 1.5px;
 
   /* Typography personality. */
-  --f-display: var(--font-cmdysj), var(--font-cjk-serif);
+  --f-display: var(--font-source-han-sans-cn), var(--font-cjk-serif);
   --f-sans: var(--font-geist), var(--font-cjk-sans);
   --f-mono: var(--font-geist-mono), var(--font-cjk-sans);
 
