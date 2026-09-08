@@ -1,0 +1,113 @@
+name: Build and deploy website
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Finish an in-progress deployment before starting another one.
+concurrency:
+  group: website-production
+  cancel-in-progress: false
+
+jobs:
+  image:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      reference: ${{ steps.reference.outputs.image }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Check deployment failure handling
+        run: python3 scripts/test-deploy.py
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Set image name
+        id: name
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - name: Build and load the Linux image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: lyaqanyi-site:smoke
+          build-args: NEXT_PUBLIC_SITE_URL=${{ vars.SITE_URL || 'https://lyaqanyi.com' }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Test the running container
+        run: |
+          docker run --detach --name site-smoke --publish 127.0.0.1:3100:3000 lyaqanyi-site:smoke
+          node scripts/check-site.mjs
+      - name: Stop the test container
+        if: always()
+        run: |
+          if docker container inspect site-smoke >/dev/null 2>&1; then
+            docker logs --tail 60 site-smoke
+            docker rm --force site-smoke
+          fi
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish the tested image and record its digest
+        id: reference
+        env:
+          IMAGE_NAME: ${{ steps.name.outputs.image }}
+        run: |
+          docker tag lyaqanyi-site:smoke "$IMAGE_NAME:sha-$GITHUB_SHA"
+          docker push "$IMAGE_NAME:sha-$GITHUB_SHA"
+          docker tag lyaqanyi-site:smoke "$IMAGE_NAME:main"
+          docker push "$IMAGE_NAME:main"
+          image_ref=$(docker image inspect "$IMAGE_NAME:sha-$GITHUB_SHA" \
+            --format '{{range .RepoDigests}}{{println .}}{{end}}' \
+            | awk -v prefix="$IMAGE_NAME@" 'index($0, prefix) == 1 {print; exit}')
+          [[ "$image_ref" =~ @sha256:[a-f0-9]{64}$ ]] || { echo 'Image digest missing'; exit 1; }
+          echo "image=$image_ref" >> "$GITHUB_OUTPUT"
+          printf 'Image: `%s`\n' "$image_ref" >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    needs: image
+    if: vars.AUTO_DEPLOY == 'true'
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Deploy through SSH
+        env:
+          SSH_HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_USER: ${{ secrets.DEPLOY_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          SSH_PORT: ${{ vars.DEPLOY_SSH_PORT || '22' }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/lyaqanyi-site' }}
+          IMAGE_REFERENCE: ${{ needs.image.outputs.reference }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SSH_HOST" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*$ ]] || { echo 'Invalid DEPLOY_HOST'; exit 1; }
+          [[ "$SSH_USER" =~ ^[a-z_][a-z0-9_-]*$ ]] || { echo 'Invalid DEPLOY_USER'; exit 1; }
+          [[ "$SSH_PORT" =~ ^[0-9]{1,5}$ ]] || { echo 'Invalid DEPLOY_SSH_PORT'; exit 1; }
+          [[ "$DEPLOY_PATH" =~ ^/[a-zA-Z0-9._/-]+$ ]] || { echo 'Invalid DEPLOY_PATH'; exit 1; }
+          [[ "$IMAGE_REFERENCE" =~ ^ghcr\.io/[a-z0-9][a-z0-9._/-]*@sha256:[a-f0-9]{64}$ ]] || exit 1
+          [[ -n "$SSH_PRIVATE_KEY" && -n "$SSH_KNOWN_HOSTS" ]] || { echo 'SSH secrets are missing'; exit 1; }
+          umask 077
+          key_dir=$(mktemp -d)
+          trap 'rm -rf -- "$key_dir"' EXIT
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$key_dir/key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$key_dir/known_hosts"
+          ssh -i "$key_dir/key" -p "$SSH_PORT" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$key_dir/known_hosts" -o ConnectTimeout=20 \
+            -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
+            "$SSH_USER@$SSH_HOST" "bash '$DEPLOY_PATH/deploy.sh' '$IMAGE_REFERENCE'"

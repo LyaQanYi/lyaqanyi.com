@@ -1,0 +1,73 @@
+.grid,
+.frame {
+  --project-card-width: 315px;
+  --project-card-height: 440px;
+}
+
+.frame {
+  width: var(--project-card-width);
+  height: var(--project-card-height);
+  flex: none;
+}
+
+.cover {
+  height: 195px;
+  flex-shrink: 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--project-card-width));
+  grid-auto-rows: var(--project-card-height);
+  gap: 24px;
+  justify-content: start;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+
+  /* Keep focus outlines visible and allow a fixed card to scroll on tiny screens. */
+  margin-inline: -6px;
+  padding: 6px 6px 16px;
+}
+
+.rail {
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: var(--project-card-width);
+}
+
+.horizontalGrid,
+.horizontal {
+  --project-card-width: 630px;
+  --project-card-height: 240px;
+}
+
+.horizontal .card {
+  flex-direction: row;
+}
+
+.horizontal .content {
+  padding-block: 16px;
+}
+
+.horizontal .cover {
+  width: 50%;
+  height: 100%;
+  border-right: var(--border-w) solid var(--border);
+}
+
+@media print {
+  .grid {
+    overflow: visible;
+    margin-inline: 0;
+    padding: 0;
+  }
+
+  .rail {
+    grid-template-columns: repeat(auto-fill, var(--project-card-width));
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+  }
+}

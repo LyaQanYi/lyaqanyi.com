@@ -1,0 +1,39 @@
+.hero {
+  /* The sticky header is 4rem tall with a 1px bottom border. */
+  min-height: calc(100svh - 4rem - 1px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 24px;
+  padding-block: 48px 32px;
+}
+
+.hero > * {
+  flex-shrink: 0;
+}
+
+@media (max-height: 800px) {
+  .hero {
+    gap: 16px;
+    padding-block: 24px 20px;
+  }
+
+  .greeting {
+    margin-top: 24px;
+  }
+
+  .socials {
+    margin-top: 32px;
+  }
+}
+
+@media print {
+  .hero {
+    min-height: auto;
+    padding-block: 0;
+  }
+
+  .scrollPrompt {
+    display: none;
+  }
+}

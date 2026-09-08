@@ -1,0 +1,27 @@
+name: lyaqanyi-web
+
+services:
+  website:
+    image: ${SITE_IMAGE:?Set SITE_IMAGE in .env before starting the website}
+    restart: unless-stopped
+    init: true
+    ports:
+      - "127.0.0.1:${SITE_PORT:-3100}:3000"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      default:
+        aliases:
+          - lyaqanyi-site
+
+networks:
+  default:
+    name: lyaqanyi-web

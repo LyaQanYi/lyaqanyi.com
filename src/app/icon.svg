@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!--
+    The site's mark: the initial of the handle, drawn as geometry rather than
+    set in a typeface. A favicon cannot count on a webfont being present; it is
+    fetched before the page's CSS, and often rendered by something that is not
+    the browser at all, so a `text` element here would fall back to whatever
+    face the rendering context happens to have.
+
+    Colours are the accent over the accent-contrast, which makes this a site
+    button at favicon scale. Flipping the two under a dark colour scheme means the tab
+    shows a solid tile in either appearance instead of a mark that vanishes
+    against a matching background.
+
+    Square, with no corner radius: every radius token in the stylesheet is
+    zero, and the mark should not be the exception to them.
+
+    No double hyphens anywhere in this comment: XML forbids them inside one, and
+    a strict parser rejects the whole file over it. The custom properties they
+    would have named are in globals.css, where they are not inside a comment.
+  -->
+  <style>
+    /* Fill and stroke are kept in separate classes: one class carrying both
+       would also outline the bowl with the default 1px stroke, thickening the
+       ring and narrowing the counter it was punched out to preserve. */
+    .tile { fill: #0b0b0b; }
+    .bowl { fill: #ffffff; }
+    .tail { fill: none; stroke: #ffffff; }
+    @media (prefers-color-scheme: dark) {
+      .tile { fill: #fafafa; }
+      .bowl { fill: #0b0b0b; }
+      .tail { stroke: #0b0b0b; }
+    }
+  </style>
+
+  <rect class="tile" width="64" height="64" />
+
+  <!-- Bowl of the Q: one subpath inside another, punched out by even odd so the
+       counter stays open at every size instead of being painted over. -->
+  <path
+    class="bowl"
+    fill-rule="evenodd"
+    d="M32 12a20 20 0 1 0 0 40 20 20 0 0 0 0-40zm0 8a12 12 0 1 1 0 24 12 12 0 0 1 0-24z"
+  />
+
+  <!-- Tail, crossing the ring so the letter reads as a Q rather than an O even
+       when the whole thing is 16px across. The round cap reaches to about
+       (52, 52), well inside a 64x64 tile that now has no corner arc to clip
+       against. -->
+  <path class="tail" stroke-width="8" stroke-linecap="round" d="M38 38 49 49" />
+</svg>

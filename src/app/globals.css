@@ -1,26 +1,749 @@
 @import "tailwindcss";
 
+/* Dark utilities follow the mode in force. The theme script writes the resolved
+   value to `data-mode` before the first paint, so this variant — and anything
+   hanging off it — is already correct in the served HTML, with no client state
+   to wait for. The mode switcher's sliding slab depends on exactly that. */
+@custom-variant dark (&:where([data-mode="dark"], [data-mode="dark"] *));
+
+/* ================================================================== */
+/* 1. Tokens                                                           */
+/*    Hard rules, square corners, oversized type. Components reference */
+/*    these and never carry a literal colour or radius of their own.   */
+/* ================================================================== */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Declared here rather than written to `<html>.style` by the boot script.
+     Next wraps every route transition in `disableSmoothScrollDuringRouteTransition`,
+     which sets `scroll-behavior` on this same inline style attribute and restores
+     it afterwards — the site opts into that path with `data-scroll-behavior="smooth"`
+     on `<html>`. Two writers sharing one attribute is a collision neither of
+     them can see, and the theme loses because it is the one that wrote first.
+     Keyed off `[data-mode]` below, so it also stops being a second copy of a
+     decision the boot script has already recorded. */
+  color-scheme: light;
+
+  /* Platform fallbacks for body text and any glyph absent from the title face. */
+  --font-cjk-sans:
+    "PingFang SC", "HarmonyOS Sans SC", "Hiragino Sans GB", "Source Han Sans SC",
+    "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+  --font-cjk-serif:
+    "Songti SC", "Source Han Serif SC", "Noto Serif CJK SC", "SimSun", serif;
+
+  /* Square corners throughout — the border carries the separation instead. */
+  --r-xs: 0px;
+  --r-sm: 0px;
+  --r-md: 0px;
+  --r-lg: 0px;
+  --r-xl: 0px;
+  --r-2xl: 0px;
+  --r-3xl: 0px;
+
+  --border-w: 1.5px;
+
+  /* Typography personality. */
+  --f-display: var(--font-cmdysj), var(--font-cjk-serif);
+  --f-sans: var(--font-geist), var(--font-cjk-sans);
+  --f-mono: var(--font-geist-mono), var(--font-cjk-sans);
+
+  --display-weight: 400;
+  --display-tracking: -0.035em;
+  --display-leading: 0.95;
+  /* Keep the site's established display scale when changing the title face. */
+  --display-scale: 1.24;
+  --eyebrow-tracking: 0.22em;
+  --body-leading: 1.8;
+
+  /* Every foreground step is verified against the backgrounds it is actually
+     rendered on: `--fg-subtle` clears 4.5:1 (WCAG AA) and `--fg-muted` clears
+     6.5:1, so the three stay distinguishable in both modes. Re-run
+     `npm run audit` after changing any colour here. */
+  --bg: #ffffff;
+  --bg-alt: #f3f3f1;
+  --surface: #ffffff;
+  --surface-hover: #f8f8f7;
+  --fg: #0b0b0b;
+  --fg-muted: #4a4a4a;
+  --fg-subtle: #6c6c6c;
+  --accent: #0b0b0b;
+  --accent-hover: #000000;
+  --accent-contrast: #ffffff;
+  --accent-soft: #ebebeb;
+  --secondary: #4a4a4a;
+  --spot: #ff3b1f;
+  --border: #0b0b0b;
+  --border-strong: #0b0b0b;
+  --ring: #ff3b1f;
+
+  /* Shadows off. The hard border is the whole separation story, so a shadow
+     would only muddy it — but the tokens stay declared, because `@theme` below
+     maps them and the primitives reference them unconditionally. */
+  --shadow-color: 0 0 0;
+  --shadow-strength: 0;
+
+  /* Rule colour for the decorative backdrop. */
+  --grid-line: color-mix(in oklab, var(--fg) 9%, transparent);
+
+  /* Veil laid over synthesised cover artwork; darkened in dark mode so bright
+     gradients do not glare against the page. */
+  --cover-veil: rgb(255 255 255 / 0);
+  /* Ink for the year watermark printed on that artwork. It has to flip with
+     the mode: white caps out at 2.77:1 on the brightest cover gradient and
+     never reads, while black disappears once the dark veil is applied. Both
+     values land near 3:1 on every cover in `projects.ts`. */
+  --cover-ink: rgb(0 0 0 / 0.58);
 }
+
+/* Outranks the bare `:root` above on specificity, so dark mode wins regardless
+   of source order. That is also what makes a missing `data-mode` degrade to
+   light rather than to a palette where nothing resolves. */
+:root[data-mode="dark"] {
+  color-scheme: dark;
+  --bg: #0b0b0b;
+  --bg-alt: #141414;
+  --surface: #101010;
+  --surface-hover: #1a1a1a;
+  --fg: #fafafa;
+  --fg-muted: #b4b4b4;
+  --fg-subtle: #858585;
+  --accent: #fafafa;
+  --accent-hover: #ffffff;
+  --accent-contrast: #0b0b0b;
+  --accent-soft: #242424;
+  --secondary: #b4b4b4;
+  --spot: #ff5a3c;
+  --border: #fafafa;
+  --border-strong: #fafafa;
+  --ring: #ff5a3c;
+  --grid-line: color-mix(in oklab, var(--fg) 12%, transparent);
+  --cover-veil: rgb(0 0 0 / 0.32);
+  --cover-ink: rgb(255 255 255 / 0.68);
+}
+
+/* ================================================================== */
+/* 2. Map tokens onto Tailwind's namespaces                           */
+/* ================================================================== */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-bg-alt: var(--bg-alt);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-contrast: var(--accent-contrast);
+  --color-accent-soft: var(--accent-soft);
+  --color-secondary: var(--secondary);
+  --color-spot: var(--spot);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-ring: var(--ring);
+  --color-cover-ink: var(--cover-ink);
+
+  --font-sans: var(--f-sans);
+  --font-display: var(--f-display);
+  --font-mono: var(--f-mono);
+
+  --radius-xs: var(--r-xs);
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+  --radius-2xl: var(--r-2xl);
+  --radius-3xl: var(--r-3xl);
+
+  --shadow-panel:
+    0 1px 2px rgb(var(--shadow-color) / calc(var(--shadow-strength) * 0.7)),
+    0 12px 32px -18px rgb(var(--shadow-color) / var(--shadow-strength));
+  --shadow-lift:
+    0 2px 4px rgb(var(--shadow-color) / calc(var(--shadow-strength) * 0.8)),
+    0 24px 48px -24px rgb(var(--shadow-color) / calc(var(--shadow-strength) * 1.6));
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ================================================================== */
+/* 3. Base layer                                                      */
+/* ================================================================== */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    /* The single anchor offset for the whole site. The sticky header is 4rem
+       plus a hairline, so this leaves it breathing room. Anchor targets must
+       not add their own `scroll-margin-top`: the browser sums the two, and the
+       target then lands twice as far down as intended. */
+    scroll-padding-top: 6.5rem;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: var(--f-sans);
+    line-height: var(--body-leading);
+    font-feature-settings: "cv02", "cv03", "cv04";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    transition:
+      background-color 0.4s ease,
+      color 0.4s ease;
+  }
+
+  ::selection {
+    background-color: var(--accent);
+    color: var(--accent-contrast);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+    border-radius: var(--r-xs);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--f-display);
+    font-weight: var(--display-weight);
+    letter-spacing: var(--display-tracking);
+    line-height: var(--display-leading);
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Chinese and Latin need different optical sizes; nudge CJK line height up. */
+  :lang(zh) {
+    line-height: calc(var(--body-leading) + 0.05);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ================================================================== */
+/* 4. Decorative background layer                                     */
+/*    Rendered by an inert, aria-hidden element behind all content.    */
+/* ================================================================== */
+
+/* Explicit column rules, the way a broadsheet is set, masked out down the
+   page so they never compete with the body text. */
+.decor {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  pointer-events: none;
+  background-image: linear-gradient(to right, var(--grid-line) 1px, transparent 1px);
+  background-size: 8.3333% 100%;
+  background-position: center;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 60%);
+}
+
+/* ================================================================== */
+/* 5. Reusable primitives                                             */
+/*    Every value comes from a token, so the dark mode override restyles */
+/*    all of them at once without touching component markup.           */
+/* ================================================================== */
+
+@utility panel {
+  background-color: var(--surface);
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-panel);
+}
+
+@utility panel-flat {
+  background-color: var(--surface);
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--r-lg);
+}
+
+@utility chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--r-md);
+  padding: 0.1875rem 0.625rem;
+  font-family: var(--f-mono);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--fg-muted);
+  background-color: var(--surface);
+}
+
+@utility eyebrow {
+  font-family: var(--f-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: var(--eyebrow-tracking);
+  text-transform: uppercase;
+  color: var(--fg-subtle);
+}
+
+/* Hairline rule at the site's border weight. */
+@utility rule {
+  border-top: var(--border-w) solid var(--border);
+}
+
+/* Underline that animates from the left, used on inline links. */
+@utility link-underline {
+  text-decoration-line: underline;
+  text-decoration-color: color-mix(in oklab, var(--fg) 28%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+  transition: text-decoration-color 0.2s ease;
+
+  &:hover {
+    text-decoration-color: var(--accent);
+  }
+}
+
+/* Display sizes. The fluid clamp keeps a single breakpoint-free scale, and
+   `--display-scale` sets where the serif sits optically within it. */
+@utility display-hero {
+  font-size: calc(clamp(2.75rem, 7.5vw, 5rem) * var(--display-scale));
+}
+
+@utility display-title {
+  font-size: calc(clamp(2.125rem, 5.5vw, 3.5rem) * var(--display-scale));
+}
+
+@utility display-section {
+  font-size: calc(clamp(1.625rem, 3.4vw, 2.375rem) * var(--display-scale));
+}
+
+/* Synthesised project cover. The two colours come from the content record, so
+   they behave like a screenshot would — the frame around them (border, radius,
+   shadow) is what follows the mode. Two stacked gradients let the veil sit
+   over the artwork without a pseudo-element or z-index games. */
+.cover {
+  background-image:
+    linear-gradient(var(--cover-veil), var(--cover-veil)),
+    linear-gradient(140deg, var(--cover-from), var(--cover-to));
+}
+
+/* ================================================================== */
+/* 6. Prose — post bodies built from typed blocks                     */
+/* ================================================================== */
+
+.article-contents summary::-webkit-details-marker {
+  display: none;
+}
+
+.prose-post {
+  color: var(--fg-muted);
+  font-size: 1.0625rem;
+
+  & > * + * {
+    margin-top: 1.5rem;
+  }
+
+  & p {
+    color: inherit;
+  }
+
+  & h2 {
+    color: var(--fg);
+    font-size: 1.625rem;
+    margin-top: 3.5rem;
+  }
+
+  & h2::before {
+    content: "";
+    display: block;
+    width: 2rem;
+    height: var(--border-w);
+    background-color: var(--accent);
+    margin-bottom: 1rem;
+  }
+
+  & blockquote {
+    border-left: 2px solid var(--accent);
+    padding-left: 1.25rem;
+    color: var(--fg);
+    font-family: var(--f-display);
+    font-size: 1.375rem;
+    line-height: 1.5;
+  }
+
+  & ul,
+  & ol {
+    padding-left: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  & ul {
+    list-style: none;
+    padding-left: 1.5rem;
+  }
+
+  & ul > li {
+    position: relative;
+  }
+
+  & ul > li::before {
+    content: "";
+    position: absolute;
+    left: -1.1rem;
+    top: 0.7em;
+    width: 0.4rem;
+    height: 1.5px;
+    background-color: var(--accent);
+  }
+
+  & ol {
+    list-style: decimal;
+  }
+
+  & ol > li::marker {
+    color: var(--accent);
+    font-family: var(--f-mono);
+    font-size: 0.875rem;
+  }
+
+  & pre {
+    background-color: var(--bg-alt);
+    border: var(--border-w) solid var(--border);
+    border-radius: var(--r-md);
+    padding: 1.25rem;
+    overflow-x: auto;
+    font-family: var(--f-mono);
+    font-size: 0.8125rem;
+    line-height: 1.7;
+    color: var(--fg);
+  }
+
+  & a {
+    color: var(--accent);
+  }
+}
+
+/* ================================================================== */
+/* 7. Motion & accessibility                                          */
+/* ================================================================== */
+
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hero-enter {
+  animation: rise 0.4s var(--ease-out) both;
+}
+
+.hero-name {
+  position: relative;
+  animation-delay: 60ms;
+}
+
+.hero-name::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -0.5rem;
+  width: 4rem;
+  border-top: var(--border-w) solid var(--fg-subtle);
+  transform-origin: left;
+  animation: line-unfold 0.42s var(--ease-out) 0.18s both;
+}
+
+.hero-description { animation-delay: 120ms; }
+.hero-availability { animation-delay: 160ms; }
+.hero-actions { animation-delay: 200ms; }
+.hero-socials { animation-delay: 220ms; }
+
+/* Animate individual landmarks, not a page-sized wrapper: sticky navigation,
+   restored scroll positions and article anchors retain their normal geometry. */
+.page-enter,
+.reveal-on-mount {
+  animation: rise 0.48s var(--ease-out) var(--reveal-delay, 0ms) both;
+}
+
+.enter-title { --reveal-delay: 60ms; }
+.enter-description { --reveal-delay: 120ms; }
+.enter-controls { --reveal-delay: 180ms; }
+
+.availability-glow {
+  opacity: 0.28;
+  animation: breathe 3.6s ease-in-out infinite;
+}
+
+.scroll-reveal {
+  transition:
+    opacity 0.48s var(--ease-out) var(--reveal-delay, 0ms),
+    transform 0.48s var(--ease-out) var(--reveal-delay, 0ms);
+}
+
+.scroll-reveal[data-reveal="pending"] {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: none;
+}
+
+.scroll-reveal[data-reveal] {
+  animation: none;
+}
+
+/* Keyboard users can reach content before an entrance finishes. */
+.scroll-reveal:focus-within,
+.hero-enter:focus-within {
+  animation: none;
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
+/* Keep the original timeline running underneath focus feedback so leaving a
+   filter or page action does not start its entrance again. */
+.page-enter:focus-within {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.project-cover-art {
+  transition: transform 0.45s var(--ease-out);
+}
+
+.project-card-arrow {
+  transition: transform 0.25s var(--ease-out);
+}
+
+.post-row-arrow {
+  opacity: 0.55;
+  transition: transform 0.22s var(--ease-out), opacity 0.22s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .project-card:hover .project-cover-art {
+    transform: scale(1.025);
+  }
+
+  .project-card:hover .project-card-arrow {
+    transform: translateX(3px);
+  }
+
+  .post-row:hover .post-row-arrow {
+    opacity: 1;
+    transform: translateX(4px);
+  }
+
+}
+
+.post-row:focus-within .post-row-arrow {
+  opacity: 1;
+  transform: translateX(4px);
+}
+
+.project-card:focus-visible .project-cover-art {
+  transform: scale(1.025);
+}
+
+.project-card:focus-visible .project-card-arrow {
+  transform: translateX(3px);
+}
+
+.action-link {
+  transition:
+    transform 0.18s var(--ease-out),
+    color 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.action-link:active {
+  transform: scale(0.98);
+}
+
+.mobile-navigation {
+  opacity: 0;
+  transform: translateY(-8px);
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.18s ease,
+    transform 0.22s var(--ease-out),
+    visibility 0s linear 0.22s;
+}
+
+.mobile-navigation[data-open="true"] {
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+/* Collapse the name and separator together while keeping the handle visible.
+   A grid track animates the intrinsic width without guessing a text width. */
+.site-wordmark-prefix {
+  display: grid;
+  grid-template-columns: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-columns 0.28s ease,
+    opacity 0.2s ease,
+    visibility 0.28s;
+}
+
+@media (min-width: 64rem) {
+  #top[data-scrolled="false"] .site-wordmark-prefix {
+    grid-template-columns: 1fr;
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Entrance animation, applied opt-in by components. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes line-unfold {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.2; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(1.65); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter,
+  .reveal-on-mount,
+  .hero-enter,
+  .hero-name::after,
+  .availability-glow,
+  .scroll-reveal[data-reveal] {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .availability-glow { opacity: 0.28; }
+
+  .project-card .project-cover-art,
+  .project-card .project-card-arrow,
+  .post-row .post-row-arrow,
+  .action-link:active {
+    transform: none !important;
+  }
+}
+
+/* ================================================================== */
+/* 8. Print                                                           */
+/*    `PrintResume` sends the about page to the printer, and any page   */
+/*    can be printed from the browser menu, so this covers the whole    */
+/*    site rather than only the résumé.                                */
+/* ================================================================== */
+
+@media print {
+  @page {
+    margin: 12mm 14mm;
+  }
+
+  /* Re-declaring the tokens puts the whole document on paper at once, since
+     every colour in the site already resolves through them. Without this a
+     visitor in dark mode prints near-white text: browsers drop background
+     colours but keep foregrounds, so the sheet comes out apparently blank.
+
+     `[data-mode]` carries the same specificity as the dark token block above,
+     which source order then settles in favour of paper. Plain `:root` is
+     listed first so the values still apply if the theme script never ran and
+     left the attribute off. */
+  :root,
+  :root[data-mode] {
+    --bg: #ffffff;
+    --bg-alt: #ffffff;
+    --surface: #ffffff;
+    --surface-hover: #ffffff;
+    --fg: #111113;
+    --fg-muted: #34353b;
+    --fg-subtle: #4c4d54;
+    --accent: #111113;
+    --accent-hover: #000000;
+    --accent-contrast: #ffffff;
+    --accent-soft: #efefed;
+    --border: #c6c5c1;
+    --border-strong: #8d8c88;
+    --ring: #111113;
+    /* Project covers are CSS gradients, which do not reach the paper, so the
+       year watermark laid over them needs the light-mode ink to stay legible
+       on the white left behind. */
+    --cover-veil: rgb(255 255 255 / 0);
+    --cover-ink: rgb(0 0 0 / 0.58);
+  }
+
+  /* Site chrome. `body >` keeps this off the `<header>` that `PageHeader`
+     renders inside <main>: a page's own title block belongs on paper, while
+     the sticky bar carrying the nav and the appearance switcher does not. */
+  body > header,
+  body > footer,
+  body > a[href="#main"],
+  .decor {
+    display: none;
+  }
+
+  /* `min-h-svh` on the body makes the document a full viewport tall, which
+     in print is a trailing blank page. */
+  body {
+    min-height: 0;
+  }
+
+  /* Entrance animations start at opacity 0, so a print taken before one has
+     finished would simply omit the content it was applied to. */
+  .page-enter,
+  .reveal-on-mount,
+  .hero-enter,
+  .hero-name::after,
+  .scroll-reveal[data-reveal] {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  /* Keep a heading off the foot of a page and an entry from being split in
+     half. Anything taller than a full page is broken as usual. */
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+
+  li,
+  blockquote,
+  pre,
+  .panel {
+    break-inside: avoid;
+  }
 }

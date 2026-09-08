@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LyaQanYi.com
 
-## Getting Started
+浅忆QanYi的个人网站，使用 Next.js、React 和 Tailwind CSS。项目、文章与个人资料保存在 `src/content/`。
 
-First, run the development server:
+## 本地开发
+
+使用 Node.js 24 LTS：
 
 ```bash
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+打开 <http://localhost:3000>。内容编辑见 [内容说明](src/content/README.md)。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 检查与构建
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run lint
+npm run build
+python3 scripts/test-deploy.py
+```
 
-## Learn More
+构建使用 Next.js standalone 输出。Dockerfile 会包含运行所需的服务文件、静态资源和本地字体。
 
-To learn more about Next.js, take a look at the following resources:
+## 部署到 Debian + 1Panel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+完整步骤见 **[Debian 13 / 1Panel v2 自动部署指南](docs/deployment.md)**。
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- 源码仓库：<https://github.com/LyaQanYi/lyaqanyi.com>
+- 推送 `main` 后，GitHub Actions 构建并检查 `linux/amd64` 镜像，再发布到 GHCR。
+- 首次默认只构建。配置服务器和 SSH 后，将仓库变量 `AUTO_DEPLOY` 设为 `true`，开启自动上线。
+- 1Panel 负责容器管理、域名反向代理和 HTTPS。
+- `SITE_URL` 是 GitHub 的构建变量，默认 `https://lyaqanyi.com`。更改域名后需重新构建。
 
-## Deploy on Vercel
+部署文件：
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| 文件 | 用途 |
+| --- | --- |
+| `Dockerfile` | 构建生产镜像 |
+| `deploy/compose.yaml` | 服务器容器配置 |
+| `deploy/.env.example` | 镜像地址、服务端口示例 |
+| `deploy/deploy.sh` | 健康检查、更新与回退 |
+| `.github/workflows/deploy.yml` | 自动构建和部署 |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+服务器的 `.env`、SSH 私钥与登录凭据不应上传到仓库。

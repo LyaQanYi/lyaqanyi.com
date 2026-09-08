@@ -1,0 +1,30 @@
+.sample {
+  padding: clamp(1.25rem, 2.5vw, 2.25rem);
+  font-family: var(--f-sans);
+  font-synthesis: none;
+}
+
+.sample[data-font="uploaded"] {
+  --f-display: var(--font-cmdysj), var(--font-cjk-serif);
+}
+
+.sample[data-font="original"] {
+  --f-display: var(--font-instrument-serif), var(--font-cjk-serif);
+}
+
+.sample[data-font="uploaded"][data-scope="all"] {
+  --f-sans: var(--font-cmdysj), var(--font-cjk-sans);
+}
+
+.name {
+  margin-top: 0.75rem;
+  font-size: clamp(2.625rem, 4.5vw, 4.25rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+@media print {
+  .sample {
+    padding: 1rem;
+  }
+}
