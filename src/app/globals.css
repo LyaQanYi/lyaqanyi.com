@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../fonts/source-han-sans-cn-subsets.css";
 
 /* Dark utilities follow the mode in force. The theme script writes the resolved
    value to `data-mode` before the first paint, so this variant — and anything
@@ -42,6 +43,8 @@
   --border-w: 1.5px;
 
   /* Typography personality. */
+  --font-source-han-sans-cn:
+    var(--font-source-han-sans-cn-core), "Source Han Sans CN Extended";
   --f-display: var(--font-source-han-sans-cn), var(--font-cjk-serif);
   --f-sans: var(--font-geist), var(--font-cjk-sans);
   --f-mono: var(--font-geist-mono), var(--font-cjk-sans);
