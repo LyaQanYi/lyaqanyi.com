@@ -84,14 +84,10 @@
   /* Rule colour for the decorative backdrop. */
   --grid-line: color-mix(in oklab, var(--fg) 9%, transparent);
 
-  /* Veil laid over synthesised cover artwork; darkened in dark mode so bright
-     gradients do not glare against the page. */
-  --cover-veil: rgb(255 255 255 / 0);
-  /* Ink for the year watermark printed on that artwork. It has to flip with
-     the mode: white caps out at 2.77:1 on the brightest cover gradient and
-     never reads, while black disappears once the dark veil is applied. Both
-     values land near 3:1 on every cover in `projects.ts`. */
-  --cover-ink: rgb(0 0 0 / 0.58);
+  /* Lighten project gradients into tinted paper in light mode; dark mode
+     applies a dark veil instead. Keep labels readable against both surfaces. */
+  --cover-veil: rgb(255 255 255 / 0.82);
+  --cover-ink: rgb(0 0 0 / 0.68);
 }
 
 /* Outranks the bare `:root` above on specificity, so dark mode wins regardless
@@ -315,10 +311,8 @@
   font-size: calc(clamp(1.625rem, 3.4vw, 2.375rem) * var(--display-scale));
 }
 
-/* Synthesised project cover. The two colours come from the content record, so
-   they behave like a screenshot would — the frame around them (border, radius,
-   shadow) is what follows the mode. Two stacked gradients let the veil sit
-   over the artwork without a pseudo-element or z-index games. */
+/* Shared by project cards and detail pages. Preserve each project's gradient
+   hues while the veil and label ink adapt their contrast to the page mode. */
 .cover {
   background-image:
     linear-gradient(var(--cover-veil), var(--cover-veil)),
