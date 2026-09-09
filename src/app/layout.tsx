@@ -96,6 +96,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     switchLabel: uiCopy.appearance.switchLabel,
     modeLight: uiCopy.appearance.modeLight,
     modeDark: uiCopy.appearance.modeDark,
+    modeSystem: uiCopy.appearance.modeSystem,
+    autoLabel: uiCopy.appearance.autoLabel,
+    switchHint: uiCopy.appearance.switchHint,
   };
 
   return (
@@ -105,7 +108,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       /* Next.js 16 no longer overrides scroll-behavior during navigation
          unless the element opts in. */
       data-scroll-behavior="smooth"
-      /* The boot script sets data-mode before hydration. */
+      /* The boot script sets the resolved mode and preference before hydration. */
       suppressHydrationWarning
     >
       <body className="flex min-h-svh flex-col bg-bg text-fg">

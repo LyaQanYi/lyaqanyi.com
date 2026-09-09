@@ -23,6 +23,9 @@ export interface HeaderCopy {
   switchLabel: string;
   modeLight: string;
   modeDark: string;
+  modeSystem: string;
+  autoLabel: string;
+  switchHint: string;
 }
 
 function subscribeToScroll(onChange: () => void) {
@@ -150,6 +153,9 @@ export function SiteHeader({ copy }: { copy: HeaderCopy }) {
               label: copy.switchLabel,
               modeLight: copy.modeLight,
               modeDark: copy.modeDark,
+              modeSystem: copy.modeSystem,
+              autoLabel: copy.autoLabel,
+              switchHint: copy.switchHint,
             }}
           />
           <button

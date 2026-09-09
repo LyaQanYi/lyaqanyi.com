@@ -3,7 +3,7 @@
 /* Dark utilities follow the mode in force. The theme script writes the resolved
    value to `data-mode` before the first paint, so this variant — and anything
    hanging off it — is already correct in the served HTML, with no client state
-   to wait for. The mode switcher's sliding slab depends on exactly that. */
+   to wait for. */
 @custom-variant dark (&:where([data-mode="dark"], [data-mode="dark"] *));
 
 /* ================================================================== */

@@ -45,9 +45,12 @@ export const uiCopy = {
     channelLabel: "渠道",
   },
   appearance: {
-    switchLabel: "深色模式",
+    switchLabel: "切换外观",
     modeLight: "浅色",
     modeDark: "深色",
+    modeSystem: "跟随系统",
+    autoLabel: "Auto",
+    switchHint: "当前：{current}；点击切换为{next}",
   },
   hero: {
     eyebrow: "个人网站",

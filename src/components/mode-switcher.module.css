@@ -1,0 +1,54 @@
+.switcher {
+  --indicator-width: 100%;
+  --indicator-left: 0%;
+  --icon-opacity: 0;
+  --auto-opacity: 1;
+  --sun-color: var(--fg-subtle);
+  --moon-color: var(--fg-subtle);
+}
+
+:global([data-mode-preference="light"]) .switcher,
+:global([data-mode-preference="dark"]) .switcher {
+  --indicator-width: 50%;
+  --icon-opacity: 1;
+  --auto-opacity: 0;
+}
+
+:global([data-mode-preference="light"]) .switcher {
+  --sun-color: var(--accent-contrast);
+}
+
+:global([data-mode-preference="dark"]) .switcher {
+  --indicator-left: 50%;
+  --moon-color: var(--accent-contrast);
+}
+
+.indicator {
+  left: var(--indicator-left);
+  width: var(--indicator-width);
+  transition:
+    left 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.icon {
+  opacity: var(--icon-opacity);
+}
+
+.sun {
+  color: var(--sun-color);
+}
+
+.moon {
+  color: var(--moon-color);
+}
+
+.autoLabel {
+  opacity: var(--auto-opacity);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indicator {
+    transition: none;
+  }
+}

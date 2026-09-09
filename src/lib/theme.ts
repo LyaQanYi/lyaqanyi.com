@@ -1,18 +1,19 @@
-/* The two modes, and the whole of the choice the visitor is offered. Not
-   exported: the switcher hard-codes both ends rather than mapping over a list,
-   and the array exists because the boot script is generated from it, so the
-   accepted values stay defined in exactly one place. */
+/** A preference can follow the system; the rendered mode is always resolved. */
 const modes = ["light", "dark"] as const;
 export type ModeName = (typeof modes)[number];
+const preferences = [...modes, "system"] as const;
+export type ThemePreference = (typeof preferences)[number];
 
 export const MODE_STORAGE_KEY = "qanyi-mode";
 
 /** Attribute on `<html>`; CSS keys the dark tokens off it. */
 export const MODE_ATTR = "data-mode";
+export const PREFERENCE_ATTR = "data-mode-preference";
 
 export interface ThemeState {
   /** The mode in force, which is also the value on the attribute. */
   mode: ModeName;
+  preference: ThemePreference;
 }
 
 /**
@@ -22,7 +23,7 @@ export interface ThemeState {
  */
 export interface ThemeController {
   get(): ThemeState;
-  setMode(mode: ModeName): ThemeState;
+  setPreference(preference: ThemePreference): ThemeState;
 }
 
 declare global {
@@ -33,6 +34,10 @@ declare global {
 
 function isMode(value: unknown): value is ModeName {
   return typeof value === "string" && (modes as readonly string[]).includes(value);
+}
+
+function isPreference(value: unknown): value is ThemePreference {
+  return typeof value === "string" && (preferences as readonly string[]).includes(value);
 }
 
 /**
@@ -71,27 +76,21 @@ function isMode(value: unknown): value is ModeName {
  * A MutationObserver callback runs as a microtask, before the next paint, so the
  * correction is never visible. Re-writing re-triggers the observer, which is why
  * the value is compared first: the second pass finds it already correct and
- * stops, so it cannot loop. Only `data-mode` is watched — deliberately not
- * `style`, which Next writes on every route transition and which this script
- * does not touch at all.
+ * stops, so it cannot loop. Only the mode and preference attributes are watched,
+ * leaving `style`, which Next writes on every route transition, alone.
  *
  * The two listeners after it keep the preference honest from outside the page:
- * `matchMedia` so that a visitor who has never chosen follows the OS moving
+ * `matchMedia` so that a visitor choosing Auto follows the OS moving
  * between light and dark, and `storage` so a change made in another tab is
  * reflected here instead of leaving two tabs disagreeing about what is on
  * screen. A `storage` event with a null key means storage was cleared
- * wholesale. Neither event fires in the tab that made the change, so there is
- * nothing to guard against.
+ * wholesale, which returns the preference to system.
  *
- * Following the OS is a starting point rather than a third mode. The switch
- * offers light and dark only; picking either writes the choice, and a written
- * choice then outranks the media listener — which is why both listeners simply
- * re-run `preferred` instead of checking whether they are allowed to. Nothing
- * unwrites it again: there is no reset, because with two modes and no "auto" to
- * return to, resetting would only mean "go back to guessing", and a visitor who
- * wants the OS in charge can say so with the OS.
+ * The preference stays separate from the resolved mode. System changes resolve
+ * the current in-memory preference; only storage events re-read persistence.
+ * This also preserves a manual selection when storage is unavailable.
  *
- * `setMode` applies the value it was handed instead of reading storage back
+ * `setPreference` applies the value it was handed instead of reading storage back
  * after writing it. In a browser that refuses the write — private browsing, a
  * full quota — the read returns the OS preference, and the page would visibly
  * undo the click a moment after it happened. Applying the request keeps the
@@ -101,7 +100,8 @@ function isMode(value: unknown): value is ModeName {
 export const themeBootScript = `(function () {
   var MODE_KEY = ${JSON.stringify(MODE_STORAGE_KEY)};
   var MODE_ATTR = ${JSON.stringify(MODE_ATTR)};
-  var MODES = ${JSON.stringify(modes)};
+  var PREFERENCE_ATTR = ${JSON.stringify(PREFERENCE_ATTR)};
+  var PREFERENCES = ${JSON.stringify(preferences)};
 
   var root = document.documentElement;
   var media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -116,29 +116,31 @@ export const themeBootScript = `(function () {
 
   function preferred() {
     var stored = read(MODE_KEY);
-    if (MODES.indexOf(stored) !== -1) return stored;
-    return media.matches ? "dark" : "light";
+    return PREFERENCES.indexOf(stored) !== -1 ? stored : "system";
   }
 
-  function apply(mode) {
+  function apply(preference) {
+    var mode = preference === "system" ? (media.matches ? "dark" : "light") : preference;
     root.setAttribute(MODE_ATTR, mode);
-    return { mode: mode };
+    root.setAttribute(PREFERENCE_ATTR, preference);
+    return { mode: mode, preference: preference };
   }
 
   var state = apply(preferred());
 
   function assertAttribute() {
-    if (root.getAttribute(MODE_ATTR) !== state.mode) apply(state.mode);
+    if (root.getAttribute(MODE_ATTR) !== state.mode ||
+        root.getAttribute(PREFERENCE_ATTR) !== state.preference) state = apply(state.preference);
   }
   if (window.MutationObserver) {
     new MutationObserver(assertAttribute).observe(root, {
       attributes: true,
-      attributeFilter: [MODE_ATTR]
+      attributeFilter: [MODE_ATTR, PREFERENCE_ATTR]
     });
   }
 
   var onChange = function () {
-    state = apply(preferred());
+    state = apply(state.preference);
   };
   if (media.addEventListener) media.addEventListener("change", onChange);
   else if (media.addListener) media.addListener(onChange);
@@ -150,8 +152,8 @@ export const themeBootScript = `(function () {
 
   window.__qanyiTheme = {
     get: function () { return state; },
-    setMode: function (next) {
-      if (MODES.indexOf(next) === -1) return state;
+    setPreference: function (next) {
+      if (PREFERENCES.indexOf(next) === -1) return state;
       write(MODE_KEY, next);
       state = apply(next);
       return state;
@@ -173,8 +175,10 @@ function normalize(state: ThemeState): ThemeState {
      boot script only ever produces the two, so this is a guard, not a path. */
   const normalized: ThemeState = {
     mode: isMode(state.mode) ? state.mode : "light",
+    preference: isPreference(state.preference) ? state.preference : "system",
   };
-  if (lastSnapshot !== null && lastSnapshot.mode === normalized.mode) {
+  if (lastSnapshot !== null && lastSnapshot.mode === normalized.mode &&
+      lastSnapshot.preference === normalized.preference) {
     return lastSnapshot;
   }
   lastSnapshot = normalized;
@@ -250,11 +254,11 @@ export function readThemeStateOnServer(): null {
   return null;
 }
 
-export function setMode(mode: ModeName): void {
+export function setThemePreference(preference: ThemePreference): void {
   const instance = controller();
   if (!instance) return;
   /* Normalized before the announcement, so a listener that re-reads during
      `emit` sees the new value rather than the old one. */
-  normalize(instance.setMode(mode));
+  normalize(instance.setPreference(preference));
   emit();
 }

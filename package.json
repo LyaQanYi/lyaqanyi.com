@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test:theme": "node --test scripts/theme.test.mjs",
     "audit": "node scripts/contrast-audit.mjs",
     "favicon": "node scripts/build-favicon.mjs"
   },
